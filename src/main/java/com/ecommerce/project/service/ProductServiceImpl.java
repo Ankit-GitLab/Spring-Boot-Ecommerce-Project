@@ -85,7 +85,7 @@ public class ProductServiceImpl implements ProductService{
     public ProductDTO updateProduct(Long productId, Product product) {
         // get the existing product from DB
         Product productFromDb = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product", "ProductId", productId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
 
         // Update the product info with the one in request body
@@ -99,5 +99,14 @@ public class ProductServiceImpl implements ProductService{
         // Save to database
         Product savedProduct = productRepository.save(productFromDb);
         return modelMapper.map(savedProduct, ProductDTO.class);
+    }
+
+    @Override
+    public ProductDTO deleteProduct(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+        productRepository.delete(product);
+        return modelMapper.map(product, ProductDTO.class);
     }
 }
