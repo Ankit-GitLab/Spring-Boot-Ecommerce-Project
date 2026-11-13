@@ -1,5 +1,6 @@
 package com.ecommerce.project.service;
 
+import com.ecommerce.project.exceptions.APIException;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.model.Product;
@@ -42,10 +43,22 @@ public class ProductServiceImpl implements ProductService{
 
     @Override
     public ProductDTO addProduct(Long categoryId, ProductDTO productDTO) {
+        // check if product already present or not
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Category","categoryId",categoryId));
 
+        boolean isProductNotPresent = true;
+
+        List<Product> products = category.getProducts();
+        for (Product value : products) {
+            if (value.getProductName().equals(productDTO.getProductName())) {
+                isProductNotPresent = false;
+                break;
+            }
+        }
+
+        if (isProductNotPresent){
         Product product = modelMapper.map(productDTO, Product.class);
         product.setImage("default.png");
         product.setCategory(category);
@@ -53,14 +66,22 @@ public class ProductServiceImpl implements ProductService{
         product.setSpecialPrice(specialPrice);
         Product savedProduct = productRepository.save(product);
         return modelMapper.map(savedProduct, ProductDTO.class);
+        }else{
+            throw new APIException("Product already exists!!");
+        }
     }
 
     @Override
     public ProductResponse getAllProducts() {
+        // product size is 0
         List<Product> products = productRepository.findAll();
         List<ProductDTO> productDTOS = products.stream()
                 .map(product -> modelMapper.map(product, ProductDTO.class))
                 .toList();
+
+        if (products.isEmpty()){
+            throw new APIException("No Products Exists!!");
+        }
 
         ProductResponse productResponse = new ProductResponse();
         productResponse.setContent(productDTOS);
@@ -69,9 +90,12 @@ public class ProductServiceImpl implements ProductService{
 
     @Override
     public ProductResponse searchByCategory(Long categoryId) {
+        // product size is 0
         Category category = categoryRepository.findById(categoryId)
             .orElseThrow(() ->
                 new ResourceNotFoundException("Category","categoryId",categoryId));
+
+
 
         List<Product> products = productRepository.findByCategoryOrderByPriceAsc(category);
 
@@ -86,6 +110,7 @@ public class ProductServiceImpl implements ProductService{
 
     @Override
     public ProductResponse searchByKeyword(String keyword){
+        // product size is 0
         List<Product> products = productRepository.findByProductNameLikeIgnoreCase('%' + keyword + '%');
 
         List<ProductDTO> productDTOS = products.stream()
